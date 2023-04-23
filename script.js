@@ -1,47 +1,40 @@
-const form = document.getElementById("url-form");
-const input = document.getElementById("url-input");
-const submitBtn = document.getElementById("submit");
-const resultDiv = document.getElementById("result-report");
+document.addEventListener('DOMContentLoaded', function() {
+    // your code goes here
+ 
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const url = input.value;
-  if (!url) {
-    resultDiv.textContent = "Please enter a valid URL";
-    return;
-  }
 
-  submitBtn.disabled = true;
-  resultDiv.textContent = "Analyzing...";
+const form = document.querySelector('#url-form');
+form.addEventListener('submit', handleFormSubmit);
 
-  fetch(url)
-    .then(response => response.text())
-    .then(data => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data, "text/html");
+function handleFormSubmit(event) {
+    event.preventDefault();
+    const url = document.querySelector('#url-input').value;
+    analyzePage(url);
+}
 
-      // Extract required information from the doc object
-      const title = doc.querySelector("title").textContent;
+function analyzePage(url) {
+    const xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                const htmlDoc = xhr.response;
+                const title = htmlDoc.querySelector('title').textContent;
+                const description = htmlDoc.querySelector('meta[name="description"]').getAttribute('content');
+                const keywords = htmlDoc.querySelector('meta[name="keywords"]').getAttribute('content');
+                const report = `Title: ${title}\nDescription: ${description}\nKeywords: ${keywords}`;
+                showReport(report);
+            } else {
+                console.log(xhr.status);
+            }
+        }
+    };
+    xhr.open('GET', url, true);
+    xhr.responseType = 'document';
+    xhr.send();
+}
 
-      // Check if the description meta element exists
-      const descriptionMeta = doc.querySelector("meta[name='description']");
-      const description = descriptionMeta ? descriptionMeta.getAttribute("content") : "";
-
-      // Check if the keywords meta element exists
-      const keywordsMeta = doc.querySelector("meta[name='keywords']");
-      const keywords = keywordsMeta ? keywordsMeta.getAttribute("content") : "";
-
-      // Update the result container with the extracted information
-      resultDiv.innerHTML = `
-        <h2>${title}</h2>
-        <p>${description}</p>
-        <p>${keywords}</p>
-      `;
-    })
-    .catch(error => {
-      resultDiv.textContent = `Error: ${error.message}`;
-    })
-    .finally(() => {
-      submitBtn.disabled = false;
-    });
+function showReport(report) {
+    const reportContainer = document.querySelector('#result-report');
+    reportContainer.innerHTML = report;
+}
 });
