@@ -1,43 +1,47 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Get references to the form and result container
-    const form = document.querySelector('#url-form');
-    const resultContainer = document.querySelector('#result-report');
-  
-    // Handle form submission
-    form.addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent default form submission behavior
-  
-        // Get the URL entered by the user
-        const url = document.querySelector('#url-input').value;
-  
-        // Call a function to analyze the URL and display the results
-        analyzeUrl(url);
+const form = document.getElementById("url-form");
+const input = document.getElementById("url-input");
+const submitBtn = document.getElementById("submit");
+const resultDiv = document.getElementById("result-report");
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const url = input.value;
+  if (!url) {
+    resultDiv.textContent = "Please enter a valid URL";
+    return;
+  }
+
+  submitBtn.disabled = true;
+  resultDiv.textContent = "Analyzing...";
+
+  fetch(url)
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, "text/html");
+
+      // Extract required information from the doc object
+      const title = doc.querySelector("title").textContent;
+
+      // Check if the description meta element exists
+      const descriptionMeta = doc.querySelector("meta[name='description']");
+      const description = descriptionMeta ? descriptionMeta.getAttribute("content") : "";
+
+      // Check if the keywords meta element exists
+      const keywordsMeta = doc.querySelector("meta[name='keywords']");
+      const keywords = keywordsMeta ? keywordsMeta.getAttribute("content") : "";
+
+      // Update the result container with the extracted information
+      resultDiv.innerHTML = `
+        <h2>${title}</h2>
+        <p>${description}</p>
+        <p>${keywords}</p>
+      `;
+    })
+    .catch(error => {
+      resultDiv.textContent = `Error: ${error.message}`;
+    })
+    .finally(() => {
+      submitBtn.disabled = false;
     });
-  
-    // Function to analyze the URL and display the results
-    function analyzeUrl(url) {
-        // Clear any previous results from the container
-        resultContainer.innerHTML = '';
-  
-        // Display a loading message while analyzing the URL
-        resultContainer.textContent = 'Analyzing...';
-  
-        // Make an API call to analyze the URL (you'll need to replace the URL with your own API endpoint)
-        fetch(`https://pagespeedonline.googleapis.com/pagespeedonline/v5/runPagespeed/${url}&key=AIzaSyA4k3TQg6QQ2GjpO8lJyPaZlbSUOsJ-35Y`)
-            .then(response => response.json())
-            .then(data => {
-                // Display the results in the result container
-                resultContainer.innerHTML = `
-                <h2>Results for ${url}</h2>
-                <p>Page title: ${data.title}</p>
-                <p>Meta description: ${data.description}</p>
-                <p>Page speed score: ${data.speedScore}</p>
-              `;
-            })
-            .catch(error => {
-                // Display an error message if there was an error analyzing the URL
-                resultContainer.textContent = `Error analyzing URL: ${error.message}`;
-            });
-    }
-  });
-  
+});
