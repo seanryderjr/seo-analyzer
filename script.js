@@ -1,40 +1,37 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // your code goes here
- 
-
-
 const form = document.querySelector('#url-form');
-form.addEventListener('submit', handleFormSubmit);
+const input = document.querySelector('#url-input');
+const result = document.querySelector('#result-report');
+const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // Replace with your own proxy server URL
 
-function handleFormSubmit(event) {
-    event.preventDefault();
-    const url = document.querySelector('#url-input').value;
-    analyzePage(url);
-}
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const url = input.value;
+  
+  // Fetch the webpage data through the proxy server
+  const response = await fetch(proxyUrl + url);
+  const data = await response.text();
+  
+  // Calculate the number of headings, links, and images on the page
+  const headings = data.match(/<h\d>/gi)?.length ?? 0;
+  const links = data.match(/<a/gi)?.length ?? 0;
+  const images = data.match(/<img/gi)?.length ?? 0;
+  
+  // Display the SEO information to the user
+  const parser = new DOMParser();
+const doc = parser.parseFromString(data.contents, 'text/html');
+const title = doc.querySelector('title')?.innerText ?? '';
+const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
 
-function analyzePage(url) {
-    const xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                const htmlDoc = xhr.response;
-                const title = htmlDoc.querySelector('title').textContent;
-                const description = htmlDoc.querySelector('meta[name="description"]').getAttribute('content');
-                const keywords = htmlDoc.querySelector('meta[name="keywords"]').getAttribute('content');
-                const report = `Title: ${title}\nDescription: ${description}\nKeywords: ${keywords}`;
-                showReport(report);
-            } else {
-                console.log(xhr.status);
-            }
-        }
-    };
-    xhr.open('GET', url, true);
-    xhr.responseType = 'document';
-    xhr.send();
-}
-
-function showReport(report) {
-    const reportContainer = document.querySelector('#result-report');
-    reportContainer.innerHTML = report;
-}
+// Display the SEO information to the user
+result.innerHTML = `
+  <h2>SEO Information for ${url}</h2>
+  <p>Page Title: ${title}</p>
+  <p>Meta Description: ${metaDesc}</p>
+  <p>Number of Headings: ${headings}</p>
+  <p>Number of Links: ${links}</p>
+  <p>Number of Images: ${images}</p>
+  `;
 });
+
+// Calculate the page title and meta description
